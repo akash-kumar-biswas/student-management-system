@@ -2,46 +2,34 @@ package com.example.studentmanagementsystem.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.userdetails.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+
+import com.example.studentmanagementsystem.service.CustomUserDetailsService;
 
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, CustomUserDetailsService userDetailsService) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/", "/*.html", "/*.css", "/*.js", "/static/**").permitAll() // allow static files
                         .requestMatchers("/api/**").authenticated() // all api needs login
                         .anyRequest().permitAll()
                 )
-                .httpBasic(Customizer.withDefaults()) // Basic Auth
+                .userDetailsService(userDetailsService)
+                .httpBasic(basic -> basic.authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\": \"Unauthorized\"}");
+                }))
                 .build();
-    }
-
-    @Bean
-    public UserDetailsService users(PasswordEncoder encoder) {
-        UserDetails teacher = User.builder()
-                .username("teacher1")
-                .password(encoder.encode("teacher123"))
-                .roles("TEACHER")
-                .build();
-
-        UserDetails student = User.builder()
-                .username("student1")
-                .password(encoder.encode("student123"))
-                .roles("STUDENT")
-                .build();
-
-        return new InMemoryUserDetailsManager(teacher, student);
     }
 
     @Bean

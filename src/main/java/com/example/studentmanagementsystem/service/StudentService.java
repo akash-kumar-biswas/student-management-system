@@ -1,5 +1,12 @@
 package com.example.studentmanagementsystem.service;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import com.example.studentmanagementsystem.dto.StudentCreateRequest;
 import com.example.studentmanagementsystem.dto.StudentUpdateMeRequest;
 import com.example.studentmanagementsystem.entity.Course;
@@ -8,13 +15,9 @@ import com.example.studentmanagementsystem.entity.Student;
 import com.example.studentmanagementsystem.repository.CourseRepository;
 import com.example.studentmanagementsystem.repository.DepartmentRepository;
 import com.example.studentmanagementsystem.repository.StudentRepository;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +26,7 @@ public class StudentService {
     private final StudentRepository studentRepository;
     private final DepartmentRepository departmentRepository;
     private final CourseRepository courseRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // ✅ TEACHER creates student
     public Student create(StudentCreateRequest req) {
@@ -36,6 +40,7 @@ public class StudentService {
 
         Student s = new Student();
         s.setUsername(req.getUsername().trim());              // ✅ important
+        s.setPassword(passwordEncoder.encode(req.getPassword())); // Encrypt password
         s.setName(req.getName().trim());
         s.setEmail(req.getEmail().trim().toLowerCase());
         s.setDepartment(dept);

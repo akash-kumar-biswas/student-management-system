@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Student Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">Student Management System - Student Dashboard</div>
+        <div class="nav-user">
+            <span id="username-display"></span>
+            <button onclick="logout()" class="btn btn-secondary">Logout</button>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <div class="student-profile">
+            <h2>My Profile</h2>
+            <div id="profile-view" class="profile-card">
+                <div class="profile-info">
+                    <p><strong>Name:</strong> <span id="profile-name"></span></p>
+                    <p><strong>Email:</strong> <span id="profile-email"></span></p>
+                    <p><strong>Username:</strong> <span id="profile-username"></span></p>
+                    <p><strong>Department:</strong> <span id="profile-department"></span></p>
+                    <p><strong>Enrolled Courses:</strong></p>
+                    <ul id="profile-courses"></ul>
+                </div>
+                <button onclick="showEditMode()" class="btn btn-primary">Edit Profile</button>
+            </div>
+
+            <div id="profile-edit" class="profile-card" style="display: none;">
+                <form id="editProfileForm">
+                    <div class="form-group">
+                        <label for="editName">Name</label>
+                        <input type="text" id="editName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEmail">Email</label>
+                        <input type="email" id="editEmail" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <button type="button" onclick="cancelEdit()" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="courses-section">
+            <h2>All Available Courses</h2>
+            <div id="all-courses-list" class="data-table"></div>
+        </div>
+    </div>
+
+    <script>
+        // Authentication helper
+        function getAuthHeader() {
+            const auth = sessionStorage.getItem('auth');
+            return { 'Authorization': 'Basic ' + auth, 'Content-Type': 'application/json' };
+        }
+
+        function checkAuth() {
+            if (!sessionStorage.getItem('auth') || sessionStorage.getItem('userType') !== 'STUDENT') {
+                window.location.href = 'index.html';
+            }
+            document.getElementById('username-display').textContent = sessionStorage.getItem('username');
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        // Load student profile
+        async function loadProfile() {
+            try {
+                const response = await fetch('/api/students/me', { headers: getAuthHeader() });
+                const student = await response.json();
+                
+                document.getElementById('profile-name').textContent = student.name;
+                document.getElementById('profile-email').textContent = student.email;
+                document.getElementById('profile-username').textContent = student.username;
+                document.getElementById('profile-department').textContent = student.department.name;
+                
+                const coursesList = document.getElementById('profile-courses');
+                coursesList.innerHTML = '';
+                if (student.courses && student.courses.length > 0) {
+                    student.courses.forEach(course => {
+                        const li = document.createElement('li');
+                        li.textContent = `${course.code} - ${course.title}`;
+                        coursesList.appendChild(li);
+                    });
+                } else {
+                    coursesList.innerHTML = '<li>No courses enrolled</li>';
+                }
+                
+                // Store for edit mode
+                window.currentStudent = student;
+            } catch (error) {
+                alert('Failed to load profile');
+            }
+        }
+
+        // Load all courses
+        async function loadAllCourses() {
+            try {
+                const response = await fetch('/api/courses', { headers: getAuthHeader() });
+                const courses = await response.json();
+                
+                let html = '<table><thead><tr><th>Code</th><th>Title</th></tr></thead><tbody>';
+                
+                courses.forEach(course => {
+                    html += `
+                        <tr>
+                            <td>${course.code}</td>
+                            <td>${course.title}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                document.getElementById('all-courses-list').innerHTML = html;
+            } catch (error) {
+                document.getElementById('all-courses-list').innerHTML = '<p class="error">Failed to load courses</p>';
+            }
+        }
+
+        // Show edit mode
+        function showEditMode() {
+            document.getElementById('editName').value = window.currentStudent.name;
+            document.getElementById('editEmail').value = window.currentStudent.email;
+            document.getElementById('profile-view').style.display = 'none';
+            document.getElementById('profile-edit').style.display = 'block';
+        }
+
+        // Cancel edit
+        function cancelEdit() {
+            document.getElementById('profile-view').style.display = 'block';
+            document.getElementById('profile-edit').style.display = 'none';
+        }
+
+        // Update profile
+        document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                name: document.getElementById('editName').value,
+                email: document.getElementById('editEmail').value
+            };
+            
+            try {
+                const response = await fetch('/api/students/me', {
+                    method: 'PUT',
+                    headers: getAuthHeader(),
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    alert('Profile updated successfully!');
+                    cancelEdit();
+                    loadProfile();
+                } else {
+                    alert('Failed to update profile');
+                }
+            } catch (error) {
+                alert('Error updating profile');
+            }
+        });
+
+        // Initialize
+        checkAuth();
+        loadProfile();
+        loadAllCourses();
+    </script>
+</body>
+</html>

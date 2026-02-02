@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management System - Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <h1>Student Management System</h1>
+            <p class="subtitle">Please login to continue</p>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userType">Login As</label>
+                    <select id="userType" name="userType" required>
+                        <option value="TEACHER">Teacher</option>
+                        <option value="STUDENT">Student</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Login</button>
+                <div id="error-message" class="error-message"></div>
+            </form>
+            
+            <div class="demo-credentials">
+                <h3>Demo Credentials:</h3>
+                <p><strong>Teacher:</strong> teacher1@admin.com / teacher123</p>
+                <p><strong>Note:</strong> Students must be created by teachers first</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const userType = document.getElementById('userType').value;
+            
+            // Store credentials in sessionStorage
+            const credentials = btoa(username + ':' + password);
+            sessionStorage.setItem('auth', credentials);
+            sessionStorage.setItem('username', username);
+            sessionStorage.setItem('userType', userType);
+            
+            // Test the credentials with appropriate endpoint based on role
+            try {
+                const testEndpoint = userType === 'TEACHER' ? '/api/students' : '/api/students/me';
+                const response = await fetch(testEndpoint, {
+                    headers: {
+                        'Authorization': 'Basic ' + credentials
+                    }
+                });
+                
+                if (response.ok || (response.status === 403 && userType === 'TEACHER')) {
+                    // Redirect based on user type
+                    if (userType === 'TEACHER') {
+                        window.location.href = 'teacher-dashboard.html';
+                    } else {
+                        window.location.href = 'student-dashboard.html';
+                    }
+                } else if (response.status === 401) {
+                    document.getElementById('error-message').textContent = 'Invalid credentials';
+                } else if (response.status === 403) {
+                    document.getElementById('error-message').textContent = 'Access denied. Please check your role selection.';
+                } else {
+                    document.getElementById('error-message').textContent = 'Login failed. Please try again.';
+                }
+            } catch (error) {
+                document.getElementById('error-message').textContent = 'Login failed. Please try again.';
+            }
+        });
+    </script>
+</body>
+</html>
