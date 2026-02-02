@@ -12,6 +12,9 @@ import java.util.Set;
 public class StudentCreateRequest {
 
     @NotBlank
+    private String username;   // ✅ Step 6.2
+
+    @NotBlank
     private String name;
 
     @Email @NotBlank
@@ -20,6 +23,5 @@ public class StudentCreateRequest {
     @NotNull
     private Long departmentId;
 
-    // optional: student can be created with courses
     private Set<Long> courseIds;
 }
