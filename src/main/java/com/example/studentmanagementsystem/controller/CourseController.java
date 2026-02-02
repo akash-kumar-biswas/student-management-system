@@ -1,26 +1,44 @@
 package com.example.studentmanagementsystem.controller;
 
-import com.example.studentmanagementsystem.dto.CourseCreateRequest;
 import com.example.studentmanagementsystem.entity.Course;
-import com.example.studentmanagementsystem.service.CourseService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import com.example.studentmanagementsystem.repository.CourseRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/courses")
-@RequiredArgsConstructor
 public class CourseController {
 
-    private final CourseService courseService;
+    private final CourseRepository repo;
+
+    public CourseController(CourseRepository repo) {
+        this.repo = repo;
+    }
 
     @PostMapping
-    public Course create(@Valid @RequestBody CourseCreateRequest req) {
-        return courseService.create(req);
+    public Course create(@RequestBody Course c) {
+        return repo.save(c);
+    }
+
+    @GetMapping
+    public List<Course> getAll() {
+        return repo.findAll();
     }
 
     @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('TEACHER')")
     public void delete(@PathVariable Long id) {
-        courseService.delete(id);
+
+        Course course = repo.findById(id).orElseThrow();
+
+        // detach from students first (removes rows from student_courses)
+        if (course.getStudents() != null) {
+            course.getStudents().forEach(s -> s.getCourses().remove(course));
+        }
+
+        repo.delete(course);
     }
+
 }

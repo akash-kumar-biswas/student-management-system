@@ -26,7 +26,8 @@ public class Course {
     private String title;
 
     // Back reference: ignore to prevent infinite recursion
-    @JsonIgnore
     @ManyToMany(mappedBy = "courses")
-    private Set<Student> students = new HashSet<>();
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private java.util.List<Student> students;
+
 }
