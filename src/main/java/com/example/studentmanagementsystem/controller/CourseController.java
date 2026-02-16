@@ -16,7 +16,7 @@ public class CourseController {
     public CourseController(CourseRepository repo) {
         this.repo = repo;
     }
-
+    @PreAuthorize("hasRole('TEACHER')")
     @PostMapping
     public Course create(@RequestBody Course c) {
         return repo.save(c);
